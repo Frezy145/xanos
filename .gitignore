@@ -1,0 +1,4 @@
+# Ignore Visual Studio Code
+.vscode/
+# Ignore Node.js
+node_modules/
