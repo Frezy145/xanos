@@ -18,10 +18,10 @@ void setup(void) {
 
 void sendToFrontend(String message) {
     Serial.println(message);
+    Frontend.println(message);
 }
 
-
-void loop() {
+void readFromFrontend() {
     while (Frontend.available()>0) {
         char receivedChar = Frontend.read();
         if (receivedChar == '\n') {
@@ -31,11 +31,16 @@ void loop() {
             receivedMessage += receivedChar;
         }
     }
+}
+
+
+void loop() {
+    readFromFrontend();
 
     // send random co2Value and temperatureValue to frontend
     co2Value = random(0, 1000);
     temperatureValue = random(0, 100);
-    message = "CO2:" + String(co2Value) + "Temperature:" + String(temperatureValue);
+    message = "CO2:" + String(co2Value) + "," + "Temperature:" + String(temperatureValue);
     sendToFrontend(message);
     delay(1000);
     

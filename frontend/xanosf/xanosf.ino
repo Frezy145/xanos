@@ -101,12 +101,20 @@ int co2Value = 0;
 int temperatureValue = 0;
 String message;
 String receivedMessage;
+String co2Label = "CO2: ";
+String temperatureLabel = "Temperature: ";
+
 
 #include <MCUFRIEND_kbv.h>
 MCUFRIEND_kbv tft;
 // If using the shield, all control and data lines are fixed, and
 // a simpler declaration can optionally be used:
 // Adafruit_TFTLCD tft;
+
+// function to erase the screen
+void eraseScreen(int x=5, int y=5, int width=tft.width()-10, int height=tft.height()-10) {
+    tft.fillRect(x, y, width, height, BLACK);
+}
 
 
 void setup(void) {
@@ -118,7 +126,7 @@ void setup(void) {
     tft.setRotation(0);
 
     tft.fillScreen(BLACK);
-    tft.drawRoundRect(2, 2, tft.width()-2, tft.height()-2, 10, WHITE);
+    tft.drawRoundRect(2, 2, tft.width()-4, tft.height()-4, 10, WHITE);
 
     // Write "Wellcome to Xanos" in the middle of the screen
     tft.setCursor(50, 50);
@@ -128,7 +136,7 @@ void setup(void) {
 
     delay(3000);
 
-    // Erase the screen
+    // Erase the fillScreen
     eraseScreen();
 }
 
@@ -142,13 +150,25 @@ void sendToBackend(String message) {
 
 // received message should be in the format "CO2:1000,Temperature:30"
 void parseReceivedMessage(String receivedMessage) {
-    int colonIndex = receivedMessage.indexOf(":");
-    int commaIndex = receivedMessage.indexOf(",");
-    co2Value = receivedMessage.substring(colonIndex+1, commaIndex).toInt();
-    temperatureValue = receivedMessage.substring(commaIndex+1).toInt();
+    int co2Index = receivedMessage.indexOf("CO2:") + 4;
+    int tempIndex = receivedMessage.indexOf("Temperature:") + 12;
+
+    co2Value = receivedMessage.substring(co2Index, receivedMessage.indexOf(",", co2Index)).toInt();
+    temperatureValue = receivedMessage.substring(tempIndex).toInt();
 }
 
 void readFromBackend() {
+    tft.print("Calling readFromBackend");
+    tft.setCursor(50, 360);
+
+    if (Serial.available() > 0) {
+        eraseScreen(45, 360, 100, 10);
+        tft.print("available");
+    } else {
+        eraseScreen(45, 360, 100, 10);
+        tft.print("Not available");
+    }
+
     while (Serial.available()) {
       char receivedChar = Serial.read();
         if (receivedChar == '\n') {
@@ -160,12 +180,11 @@ void readFromBackend() {
     }
 }
 
-// function to erase the screen
-void eraseScreen(in x=3, int y=3, int width=tft.width()-3, int height=tft.height()-3) {
-    tft.fillRect(0, BOXSIZE, tft.width(), tft.height()-BOXSIZE, BLACK);
-}
+// loop time 
+int loopTime = 0;
 
 void loop() {
+    loopTime++;
     digitalWrite(13, HIGH);
     TSPoint p = ts.getPoint();
     digitalWrite(13, LOW);
@@ -177,17 +196,30 @@ void loop() {
     //pinMode(YM, OUTPUT);
 
     // print co2Value and temperatureValue with labels in the middle of the screen
-    tft.fillRect(0, 0, tft.width(), BOXSIZE, BLACK);
-    tft.setCursor(50, 200);
+    eraseScreen(co2Label.length()*2*6 + 45, 100, 50, 15);
+    tft.setCursor(50, 100);
     tft.setTextColor(WHITE);   
     tft.setTextSize(2);
     tft.print("CO2: ");
     tft.print(co2Value);
-    tft.setCursor(50, 300);
-    tft.print(" Temperature: ");
+
+    eraseScreen(temperatureLabel.length()*2*6 + 45, 130, 50, 15);
+    tft.setCursor(50, 130);
+    tft.print("Temperature: ");
     tft.print(temperatureValue);
-    
+
+    tft.setCursor(50, 300);
+    tft.setTextColor(WHITE);
+    tft.setTextSize(2);
+    tft.print("DEBUG:");
+    // erase the loopTime
+    eraseScreen(120, 300, 100, 15);
+    tft.print(String(loopTime));
+    tft.setTextSize(1);
+    tft.setCursor(50, 330);
     readFromBackend();
+
+    delay(1000);
 
     // CLICKING
     // we have some minimum pressure we consider 'valid'
